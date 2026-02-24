@@ -1,0 +1,11 @@
+# FastAPI core
+fastapi==0.110.0
+uvicorn[standard]==0.29.0
+
+# Database
+sqlalchemy==2.0.29
+psycopg2-binary==2.9.9
+
+# Validation & env
+pydantic[email]==2.6.4
+python-dotenv==1.0.1
