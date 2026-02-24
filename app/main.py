@@ -1,15 +1,15 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
-from app.routes import leads
+from app.routes import leads, communications
 
 # Create all database tables on startup
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="SalesAI SDR API",
-    description="Backend API for the SalesAI SDR platform — Prospecting & Lead Management",
-    version="1.0.0",
+    description="Backend API for the SalesAI SDR platform — Prospecting, Lead Management & Communications",
+    version="2.0.0",
 )
 
 # ---------------------------------------------------------------------------
@@ -30,6 +30,7 @@ app.add_middleware(
 # Routers
 # ---------------------------------------------------------------------------
 app.include_router(leads.router, prefix="/leads", tags=["Leads"])
+app.include_router(communications.router, tags=["Communications & Scheduling"])
 
 
 @app.get("/", tags=["Health"])
