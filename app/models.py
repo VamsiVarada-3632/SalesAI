@@ -123,3 +123,20 @@ class Meeting(Base):
 
     lead = relationship("Lead", back_populates="meetings")
     user = relationship("User", back_populates="meetings")
+
+
+# ---------------------------------------------------------------------------
+# Campaign
+# ---------------------------------------------------------------------------
+
+class Campaign(Base):
+    __tablename__ = "campaigns"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    name = Column(String, nullable=False)
+    status = Column(String, default="Draft")   # Active | Paused | Draft
+    contacts_count = Column(Integer, default=0)
+    open_rate = Column(String, nullable=True)  # stored as "64%"
+    reply_rate = Column(String, nullable=True) # stored as "18%"
+    meetings = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

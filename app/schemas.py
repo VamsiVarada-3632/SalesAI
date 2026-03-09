@@ -182,3 +182,80 @@ class LeadTimelineOut(LeadOut):
 
     class Config:
         from_attributes = True
+
+
+# ===========================================================================
+# Campaign Schemas
+# ===========================================================================
+
+class CampaignCreate(BaseModel):
+    name: str
+    status: Optional[str] = "Draft"
+    contacts_count: Optional[int] = 0
+    open_rate: Optional[str] = None
+    reply_rate: Optional[str] = None
+    meetings: Optional[int] = 0
+
+
+class CampaignUpdate(BaseModel):
+    name: Optional[str] = None
+    status: Optional[str] = None
+    contacts_count: Optional[int] = None
+    open_rate: Optional[str] = None
+    reply_rate: Optional[str] = None
+    meetings: Optional[int] = None
+
+
+class CampaignOut(BaseModel):
+    id: int
+    name: str
+    status: str
+    contacts_count: int
+    open_rate: Optional[str] = None
+    reply_rate: Optional[str] = None
+    meetings: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+# ===========================================================================
+# Dashboard Summary Schema
+# ===========================================================================
+
+class DashboardMetric(BaseModel):
+    label: str
+    value: str
+    trend: str
+
+
+class DashboardTask(BaseModel):
+    id: int
+    name: str
+    company: str
+    email: str
+    status: str
+    score: int
+
+
+class DashboardSummary(BaseModel):
+    metrics: List[DashboardMetric]
+    tasks: List[DashboardTask]
+
+
+# ===========================================================================
+# Analytics Summary Schema
+# ===========================================================================
+
+class RepPerformance(BaseModel):
+    name: str
+    email: str
+    meetings: int
+
+
+class AnalyticsSummary(BaseModel):
+    total_leads: int
+    total_meetings: int
+    total_campaigns: int
+    reps: List[RepPerformance]

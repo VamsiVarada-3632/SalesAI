@@ -1,9 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
-from app.routes import leads, communications
+from app.routes import leads, communications, users, campaigns, dashboard, analytics
 
-# Create all database tables on startup
+# Create all database tables on startup (including Campaign)
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
@@ -31,6 +31,10 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 app.include_router(leads.router, prefix="/leads", tags=["Leads"])
 app.include_router(communications.router, tags=["Communications & Scheduling"])
+app.include_router(users.router, prefix="/users", tags=["Team"])
+app.include_router(campaigns.router, prefix="/campaigns", tags=["Campaigns"])
+app.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
+app.include_router(analytics.router, prefix="/analytics", tags=["Analytics"])
 
 
 @app.get("/", tags=["Health"])
