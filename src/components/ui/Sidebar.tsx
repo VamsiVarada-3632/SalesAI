@@ -4,15 +4,22 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from 'react';
-import { navSections, user } from '@/lib/navigation';
+import { navSections } from '@/lib/navigation';
+import { getUsers, User } from '@/lib/api';
 import clsx from 'clsx';
 
 export default function Sidebar() {
     const pathname = usePathname();
     const { theme, setTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-    useEffect(() => setMounted(true), []);
+    useEffect(() => {
+        setMounted(true);
+        getUsers().then((users) => {
+            if (users.length > 0) setCurrentUser(users[0]);
+        }).catch(() => null);
+    }, []);
 
     return (
         <aside className="flex w-64 flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 h-full flex-shrink-0">
@@ -65,7 +72,6 @@ export default function Sidebar() {
 
             {/* Bottom: theme toggle + settings + user */}
             <div className="px-4 pb-4 mt-auto flex flex-col gap-2">
-                {/* Theme toggle */}
                 {mounted && (
                     <button
                         onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
@@ -88,14 +94,16 @@ export default function Sidebar() {
                 </Link>
 
                 <div className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-                    <img
-                        src={user.avatar}
-                        alt="User Avatar"
-                        className="w-9 h-9 rounded-full object-cover border border-white dark:border-slate-700 shadow-sm"
-                    />
+                    <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
+                        {currentUser ? currentUser.name.charAt(0).toUpperCase() : '?'}
+                    </div>
                     <div className="flex flex-col overflow-hidden">
-                        <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{user.name}</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
+                        <p className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                            {currentUser ? currentUser.name : 'No users yet'}
+                        </p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                            {currentUser ? currentUser.email : 'Add a user via API'}
+                        </p>
                     </div>
                 </div>
             </div>

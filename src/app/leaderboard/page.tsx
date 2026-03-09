@@ -1,26 +1,41 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import PageHeader from '@/components/ui/PageHeader';
-
-const leaders = [
-    { rank: 1, name: 'Jordan Anderson', role: 'Senior SDR', avatar: null, initials: 'JA', meetings: 24, revenue: '$312K', openRate: '68%', badge: '🏆 Top Performer' },
-    { rank: 2, name: 'Casey Brown', role: 'SDR', avatar: null, initials: 'CB', meetings: 21, revenue: '$278K', openRate: '64%', badge: null },
-    { rank: 3, name: 'Alex Morgan', role: 'SDR Lead', avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDdWExAtMhOTeaXTwi6lyzDivSz4t2boFJG50MoawpyMxwvixoKyBHRrMNtU77s38b3oB4cad64GnBpR0vrT90Bb0YWFXILTS2fByKXhKKU39et859OR1XfGQRnwsaYjsX5NikLLhnpfEoFs-ufWPKIC8h4F1rflOtGmgzNJTNAkuwGVtEr8PU4IcZViCp8DRA186YxR7dUdejfJNUIyZxNncrQ7Tg8DCNSNB11jSCcJ3a3VEaxN5hpWSWsQHz--9ZrJH3RphuEg5A', initials: 'AM', meetings: 18, revenue: '$234K', openRate: '59%', badge: 'You' },
-    { rank: 4, name: 'Morgan Chen', role: 'SDR', avatar: null, initials: 'MC', meetings: 16, revenue: '$208K', openRate: '55%', badge: null },
-    { rank: 5, name: 'Riley Johnson', role: 'SDR', avatar: null, initials: 'RJ', meetings: 14, revenue: '$189K', openRate: '51%', badge: null },
-];
-
-const teamMetrics = [
-    { label: 'Team Total Revenue', value: '$1.22M', trend: '+23%' },
-    { label: 'Avg Open Rate', value: '59%', trend: '+6%' },
-    { label: 'Total Meetings', value: '93', trend: '+12%' },
-    { label: 'Quota Attainment', value: '87%', trend: '+3%' },
-];
+import { getUsers, User, getAnalyticsSummary, AnalyticsSummary } from '@/lib/api';
 
 export default function LeaderboardPage() {
+    const [users, setUsers] = useState<User[]>([]);
+    const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        Promise.all([getUsers(), getAnalyticsSummary()])
+            .then(([u, a]) => { setUsers(u); setAnalytics(a); })
+            .catch(console.error)
+            .finally(() => setLoading(false));
+    }, []);
+
+    // Build leaderboard: merge users with their meeting count from analytics reps
+    const leaders = users.map((u) => {
+        const rep = analytics?.reps.find((r) => r.email === u.email);
+        return { ...u, meetings: rep?.meetings ?? 0 };
+    }).sort((a, b) => b.meetings - a.meetings);
+
+    const teamMetrics = [
+        { label: 'Team Members', value: loading ? '—' : String(users.length) },
+        { label: 'Total Meetings', value: loading ? '—' : String(analytics?.total_meetings ?? 0) },
+        { label: 'Total Leads', value: loading ? '—' : String(analytics?.total_leads ?? 0) },
+        { label: 'Active Campaigns', value: loading ? '—' : String(analytics?.total_campaigns ?? 0) },
+    ];
+
+    const podium = leaders.slice(0, 3);
+
     return (
         <div className="flex-1 flex flex-col h-full overflow-hidden">
             <PageHeader
                 title="Sales Team Leaderboard"
-                subtitle="Current Quarter Performance — Q4 2023"
+                subtitle="Current performance overview"
                 actions={
                     <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-bold hover:bg-primary-hover transition-colors">
                         <span className="material-symbols-outlined" style={{ fontSize: 18 }}>download</span> Export Report
@@ -35,29 +50,34 @@ export default function LeaderboardPage() {
                         {teamMetrics.map((m) => (
                             <div key={m.label} className="bg-white dark:bg-surface-card rounded-xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
                                 <p className="text-text-secondary dark:text-slate-400 text-xs font-semibold uppercase tracking-wider mb-2">{m.label}</p>
-                                <h3 className="text-2xl font-bold text-text-primary dark:text-white">{m.value}</h3>
-                                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5 mt-1">
-                                    <span className="material-symbols-outlined" style={{ fontSize: 12 }}>arrow_upward</span>{m.trend}
-                                </span>
+                                {loading ? (
+                                    <div className="h-8 w-16 rounded bg-slate-100 dark:bg-slate-800 animate-pulse" />
+                                ) : (
+                                    <h3 className="text-2xl font-bold text-text-primary dark:text-white">{m.value}</h3>
+                                )}
                             </div>
                         ))}
                     </div>
 
-                    {/* Top 3 podium */}
-                    <div className="grid grid-cols-3 gap-4">
-                        {[leaders[1], leaders[0], leaders[2]].map((l, i) => (
-                            <div key={l.name} className={`bg-white dark:bg-surface-card border rounded-xl p-6 text-center relative ${i === 1 ? 'border-primary/40 shadow-lg shadow-primary/10 -mt-4' : 'border-slate-200 dark:border-slate-800'}`}>
-                                {i === 1 && <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-2xl">👑</div>}
-                                <div className="size-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3 text-xl font-bold text-primary overflow-hidden">
-                                    {l.avatar ? <img src={l.avatar} alt={l.name} className="w-full h-full object-cover" /> : l.initials}
+                    {/* Podium — only shown when there are users */}
+                    {!loading && podium.length >= 1 && (
+                        <div className="grid grid-cols-3 gap-4">
+                            {[podium[1], podium[0], podium[2]].filter(Boolean).map((l, i) => (
+                                <div key={l.id} className={`bg-white dark:bg-surface-card border rounded-xl p-6 text-center relative ${i === 1 ? 'border-primary/40 shadow-lg shadow-primary/10 -mt-4' : 'border-slate-200 dark:border-slate-800'}`}>
+                                    {i === 1 && <div className="absolute -top-3 left-1/2 -translate-x-1/2 text-2xl">👑</div>}
+                                    <div className="size-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3 text-xl font-bold text-primary">
+                                        {l.name.charAt(0).toUpperCase()}
+                                    </div>
+                                    <p className="font-bold text-text-primary dark:text-white">{l.name}</p>
+                                    <p className="text-xs text-text-secondary dark:text-slate-400 mb-3">{l.role}</p>
+                                    <div className={`text-3xl font-extrabold mb-1 ${['text-slate-400', 'text-yellow-500', 'text-amber-700'][i]}`}>
+                                        #{[2, 1, 3][i]}
+                                    </div>
+                                    <p className="text-sm font-bold text-primary">{l.meetings} meetings</p>
                                 </div>
-                                <p className="font-bold text-text-primary dark:text-white">{l.name}</p>
-                                <p className="text-xs text-text-secondary dark:text-slate-400 mb-3">{l.role}</p>
-                                <div className={`text-3xl font-extrabold mb-1 ${['text-slate-400', 'text-yellow-500', 'text-amber-700'][i]}`}>#{[2, 1, 3][i]}</div>
-                                <p className="text-sm font-bold text-primary">{l.revenue}</p>
-                            </div>
-                        ))}
-                    </div>
+                            ))}
+                        </div>
+                    )}
 
                     {/* Full table */}
                     <div className="bg-white dark:bg-surface-card rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
@@ -69,39 +89,44 @@ export default function LeaderboardPage() {
                                 <tr className="border-b border-slate-100 dark:border-slate-800 text-text-secondary dark:text-slate-400 text-left">
                                     <th className="px-6 py-3 font-semibold">Rank</th>
                                     <th className="px-6 py-3 font-semibold">Rep</th>
+                                    <th className="px-6 py-3 font-semibold">Role</th>
                                     <th className="px-6 py-3 font-semibold">Meetings</th>
-                                    <th className="px-6 py-3 font-semibold">Revenue</th>
-                                    <th className="px-6 py-3 font-semibold">Open Rate</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {leaders.map((l) => (
-                                    <tr key={l.rank} className={`border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${l.badge === 'You' ? 'bg-primary/5' : ''}`}>
+                                {loading ? (
+                                    [...Array(3)].map((_, i) => (
+                                        <tr key={i}>
+                                            <td colSpan={4} className="px-6 py-4">
+                                                <div className="h-6 rounded bg-slate-100 dark:bg-slate-800 animate-pulse" />
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : leaders.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={4} className="px-6 py-16 text-center">
+                                            <span className="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-600">emoji_events</span>
+                                            <p className="mt-2 text-sm font-medium text-text-secondary dark:text-slate-400">No team members yet. Invite your team to see rankings.</p>
+                                        </td>
+                                    </tr>
+                                ) : leaders.map((l, idx) => (
+                                    <tr key={l.id} className="border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                         <td className="px-6 py-4 font-bold text-text-primary dark:text-white">
-                                            {l.rank <= 3 ? ['🥇', '🥈', '🥉'][l.rank - 1] : `#${l.rank}`}
+                                            {idx < 3 ? ['🥇', '🥈', '🥉'][idx] : `#${idx + 1}`}
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="size-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs overflow-hidden">
-                                                    {l.avatar ? <img src={l.avatar} alt={l.name} className="w-full h-full object-cover" /> : l.initials}
+                                                <div className="size-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
+                                                    {l.name.charAt(0).toUpperCase()}
                                                 </div>
                                                 <div>
                                                     <p className="font-bold text-text-primary dark:text-white">{l.name}</p>
-                                                    <p className="text-xs text-text-secondary dark:text-slate-400">{l.role}</p>
+                                                    <p className="text-xs text-text-secondary dark:text-slate-400">{l.email}</p>
                                                 </div>
-                                                {l.badge && <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary">{l.badge}</span>}
                                             </div>
                                         </td>
+                                        <td className="px-6 py-4 text-text-secondary dark:text-slate-400 text-xs capitalize">{l.role}</td>
                                         <td className="px-6 py-4 text-text-primary dark:text-slate-300 font-medium">{l.meetings}</td>
-                                        <td className="px-6 py-4 text-text-primary dark:text-slate-300 font-medium">{l.revenue}</td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-16 bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
-                                                    <div className="bg-primary h-full rounded-full" style={{ width: l.openRate }} />
-                                                </div>
-                                                <span className="text-xs font-medium text-text-primary dark:text-slate-300">{l.openRate}</span>
-                                            </div>
-                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
