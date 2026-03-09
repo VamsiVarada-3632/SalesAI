@@ -37,9 +37,4 @@ export const navSections: NavSection[] = [
     },
 ];
 
-export const user = {
-    name: 'Alex Morgan',
-    email: 'alex@salesai.com',
-    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDdWExAtMhOTeaXTwi6lyzDivSz4t2boFJG50MoawpyMxwvixoKyBHRrMNtU77s38b3oB4cad64GnBpR0vrT90Bb0YWFXILTS2fByKXhKKU39et859OR1XfGQRnwsaYjsX5NikLLhnpfEoFs-ufWPKIC8h4F1rflOtGmgzNJTNAkuwGVtEr8PU4IcZViCp8DRA186YxR7dUdejfJNUIyZxNncrQ7Tg8DCNSNB11jSCcJ3a3VEaxN5hpWSWsQHz--9ZrJH3RphuEg5A',
-    plan: 'Pro Plan',
-};
+// User is now fetched dynamically from the /users/ API endpoint in the Sidebar component.
